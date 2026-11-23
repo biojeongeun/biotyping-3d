@@ -1,0 +1,8 @@
+node_modules
+dist
+*.pdf
+backup-before-reset
+.git
+.env
+.env.local
+.env.*.local

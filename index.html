@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BioTyping 3D</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <!-- 3D WebGL 캔버스 -->
+  <canvas id="bio-canvas"></canvas>
+
+  <!-- 상단 HUD (인게임) -->
+  <header id="hud" class="hud hidden">
+    <div class="hud-left">
+      <button id="btn-quit" class="icon-btn" title="처음으로 돌아가기" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+        <span>나가기</span>
+      </button>
+      <button id="btn-mute-hud" class="icon-btn mute-btn" title="효과음 켜기/끄기" type="button">🔊</button>
+      <div class="stage-badge">
+        <span id="hud-stage-name" class="badge-stage">STAGE 1 · 통합과학 1</span>
+        <span id="hud-mode-name" class="badge-unit">올콤보 모드</span>
+      </div>
+    </div>
+
+    <div class="hud-center">
+      <div class="timer-pill">
+        <span class="timer-dot"></span>
+        <span id="hud-timer" class="timer-value">0:00.00</span>
+      </div>
+    </div>
+
+    <div class="hud-right">
+      <div id="hud-combo-box" class="stat-pill combo-pill">
+        <span class="stat-label">COMBO</span>
+        <span id="hud-combo" class="stat-value">0</span>
+      </div>
+      <div class="stat-pill progress-pill">
+        <span class="stat-label">PROGRESS</span>
+        <span id="hud-progress" class="stat-value">0 / 30</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 인게임 하단 입력 패널 -->
+  <section id="gameplay-panel" class="gameplay-panel hidden">
+    <div class="question-card" id="question-card">
+      <div class="question-header">
+        <span id="question-step" class="step-chip">STEP 01</span>
+        <span class="category-chip">염기 상보적 결합</span>
+      </div>
+      <div class="dna-question-row">
+        <div class="dna-given">
+          <span class="dna-given-label">주어진 염기</span>
+          <span id="given-base" class="dna-base-chip base-A">A</span>
+        </div>
+        <span class="dna-arrow">⟷</span>
+        <div class="dna-given">
+          <span class="dna-given-label">상보 염기는?</span>
+          <span class="dna-base-chip base-unknown">?</span>
+        </div>
+      </div>
+      <div class="base-btn-row" id="input-wrapper">
+        <button type="button" class="base-btn base-A" data-base="A">A<small>키보드 A</small></button>
+        <button type="button" class="base-btn base-T" data-base="T">T<small>키보드 T</small></button>
+        <button type="button" class="base-btn base-G" data-base="G">G<small>키보드 G</small></button>
+        <button type="button" class="base-btn base-C" data-base="C">C<small>키보드 C</small></button>
+      </div>
+      <div class="typing-subbar">
+        <span id="live-feedback" class="live-feedback">DNA 이중나선을 확인하세요…</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- STAGE 2: 타이핑 입력 패널 -->
+  <section id="typing-panel" class="gameplay-panel hidden">
+    <div class="question-card" id="typing-card">
+      <div class="question-header">
+        <span id="typing-step" class="step-chip">STEP 01</span>
+        <span id="typing-place" class="category-chip">영국 플리머스 항</span>
+        <span id="typing-chosung" class="chosung-chip">초성 힌트</span>
+      </div>
+      <p id="typing-hint" class="question-hint"></p>
+      <div class="typing-wrapper" id="typing-wrapper">
+        <input
+          type="text"
+          id="typing-input"
+          class="typing-input"
+          placeholder="정답 용어를 입력하고 Enter"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+        />
+        <button id="btn-submit" class="submit-btn" type="button">확인 ↵</button>
+      </div>
+      <div class="typing-subbar">
+        <span id="typing-feedback" class="live-feedback">비글호가 출항 준비를 합니다…</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 시작 화면 -->
+  <main id="start-screen" class="screen-overlay">
+    <div class="glass-panel start-panel">
+      <div class="brand-header">
+        <h1 class="brand-title">BIO TYPING <span class="accent-gradient">3D LAB</span></h1>
+        <p id="brand-subtitle" class="brand-subtitle">DNA 이중나선의 염기 30개를 상보적 결합(A-T, G-C)으로 완성하세요</p>
+      </div>
+
+      <!-- 닉네임 입력 & 명예의 전당 / 효과음 토글 -->
+      <div class="form-section">
+        <label for="nickname-input" class="section-label">
+          연구원 닉네임 <span class="privacy-note">(별명만 입력 · 개인정보 미수집)</span>
+        </label>
+        <div class="nickname-row">
+          <input
+            type="text"
+            id="nickname-input"
+            class="nickname-input"
+            maxlength="12"
+            placeholder="예: 세포탐험가, 다윈, 멘델"
+            value="바이오탐험가"
+          />
+          <button id="btn-open-leaderboard" class="secondary-btn" type="button">
+            🏆 명예의 전당
+          </button>
+          <button id="btn-mute-start" class="secondary-btn mute-btn" title="효과음 켜기/끄기" type="button">
+            🔊
+          </button>
+        </div>
+      </div>
+
+      <!-- 5개 STAGE -->
+      <div class="form-section">
+        <div class="stage-grid" id="stage-grid">
+          <button type="button" class="stage-card active" data-stage="stage1">
+            <div class="stage-card-top">
+              <span class="stage-tag">STAGE 1</span>
+              <span class="stage-icon">🧬</span>
+            </div>
+            <h3 class="stage-title">통합과학 1</h3>
+            <span class="stage-model-badge">3D DNA 이중나선</span>
+          </button>
+
+          <button type="button" class="stage-card" data-stage="stage2">
+            <div class="stage-card-top">
+              <span class="stage-tag">STAGE 2</span>
+              <span class="stage-icon">🐦</span>
+            </div>
+            <h3 class="stage-title">통합과학 2</h3>
+            <span class="stage-model-badge">3D 자연선택</span>
+          </button>
+
+          <button type="button" class="stage-card" data-stage="stage3">
+            <div class="stage-card-top">
+              <span class="stage-tag">STAGE 3</span>
+              <span class="stage-icon">🧠</span>
+            </div>
+            <h3 class="stage-title">생명과학</h3>
+            <span class="stage-model-badge">3D 3역 계통수</span>
+          </button>
+
+          <button type="button" class="stage-card" data-stage="stage4">
+            <div class="stage-card-top">
+              <span class="stage-tag">STAGE 4</span>
+              <span class="stage-icon">🌿</span>
+            </div>
+            <h3 class="stage-title">세포와 물질대사</h3>
+            <span class="stage-model-badge">3D 세포호흡과 광합성</span>
+          </button>
+
+          <button type="button" class="stage-card stage-card-wide" data-stage="stage5">
+            <div class="stage-card-top">
+              <span class="stage-tag">STAGE 5</span>
+              <span class="stage-icon">🔬</span>
+            </div>
+            <h3 class="stage-title">생물의 유전</h3>
+            <span class="stage-model-badge">3D 생명공학기술의 활용</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 게임 모드 -->
+      <div class="form-section">
+        <span class="section-label">게임 모드 선택</span>
+        <div class="mode-grid" id="mode-grid">
+          <button type="button" class="mode-card active" data-mode="combo">
+            <div class="mode-header">
+              <span class="mode-name">🎯 올콤보 모드</span>
+              <span class="mode-pill">ALL COMBO 도전</span>
+            </div>
+            <p id="mode-desc-combo" class="mode-desc"></p>
+          </button>
+
+          <button type="button" class="mode-card" data-mode="time">
+            <div class="mode-header">
+              <span class="mode-name">⏱️ 타임어택 모드</span>
+              <span class="mode-pill">최단 시간 경쟁</span>
+            </div>
+            <p id="mode-desc-time" class="mode-desc"></p>
+          </button>
+        </div>
+      </div>
+
+      <div class="start-actions">
+        <button id="btn-start-game" class="primary-start-btn" type="button">
+          <span id="btn-start-label">DNA 염기 맞추기 시작하기</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- 결과 화면 -->
+  <section id="result-screen" class="screen-overlay hidden">
+    <div class="glass-panel result-panel">
+      <div class="result-header">
+        <div id="result-badge" class="result-badge">STAGE CLEAR</div>
+        <h2 id="result-title" class="result-title">DNA 완성!</h2>
+        <p id="result-subtitle" class="result-subtitle">통합과학 1 · 올콤보 모드</p>
+        <p id="result-summary" class="result-summary hidden"></p>
+      </div>
+
+      <div id="result-metrics" class="result-metrics">
+        <div class="metric-card">
+          <span class="metric-label">클리어 시간</span>
+          <strong id="metric-time" class="metric-value">0:00.00</strong>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">최대 콤보</span>
+          <strong id="metric-combo" class="metric-value">0 COMBO</strong>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">오답 횟수</span>
+          <strong id="metric-mistakes" class="metric-value accent">0</strong>
+        </div>
+      </div>
+
+      <!-- 명예의 전당 순위표 -->
+      <div class="leaderboard-section">
+        <div class="leaderboard-controls">
+          <div class="lb-tabs" id="lb-stage-tabs">
+            <button type="button" class="lb-tab active" data-lb-stage="stage1">통합과학 1</button>
+            <button type="button" class="lb-tab" data-lb-stage="stage2">통합과학 2</button>
+            <button type="button" class="lb-tab" data-lb-stage="stage3">생명과학</button>
+            <button type="button" class="lb-tab" data-lb-stage="stage4">세포와 물질대사</button>
+            <button type="button" class="lb-tab" data-lb-stage="stage5">생물의 유전</button>
+          </div>
+          <div class="lb-mode-switch" id="lb-mode-tabs">
+            <button type="button" class="lb-mode-btn active" data-lb-mode="combo">올콤보 순위</button>
+            <button type="button" class="lb-mode-btn" data-lb-mode="time">타임어택 순위</button>
+          </div>
+        </div>
+
+        <div class="lb-caption-row">
+          <p id="lb-rule-caption" class="lb-rule-caption">
+            정렬 기준: 올콤보(ALL COMBO) 달성 최우선 → 최대 콤보 수 → 클리어 시간 빠른 순
+          </p>
+          <button id="btn-reset-leaderboard" class="secondary-btn danger-btn" type="button">
+            🗑️ 순위 초기화
+          </button>
+        </div>
+
+        <div class="leaderboard-table-wrap">
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>순위</th>
+                <th>닉네임</th>
+                <th>콤보 / 달성</th>
+                <th>오답</th>
+                <th>클리어 시간</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="result-actions">
+        <button id="btn-retry-same" class="primary-start-btn" type="button">🔄 다시 도전</button>
+        <button id="btn-back-home" class="secondary-btn" type="button">🏠 처음 화면으로</button>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
