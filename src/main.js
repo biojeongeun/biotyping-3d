@@ -36,7 +36,7 @@ const STAGES = {
     startLabel: '비글호 항해 시작하기',
     desc: {
       combo: '상세 힌트와 초성을 보고 용어를 입력하세요. 틀리지 않고 항해하면 <strong>ALL COMBO</strong>! 틀리면 콤보가 0이 되고 배가 흔들립니다.',
-      time: '핵심 키워드 힌트만 주어집니다. 가장 빠르게 도착하세요. 틀릴 때마다 <strong>+3초</strong> 패널티가 붙습니다.',
+      time: '핵심 키워드와 초성 힌트가 주어집니다. 가장 빠르게 도착하세요. 틀릴 때마다 <strong>+3초</strong> 패널티가 붙습니다.',
     },
   },
   stage3: {
@@ -47,7 +47,7 @@ const STAGES = {
     startLabel: '계통수 키우기 시작하기',
     desc: {
       combo: '상세 힌트와 초성을 보고 용어를 입력하세요. 틀리지 않고 계통수를 완성하면 <strong>ALL COMBO</strong>! 틀리면 콤보가 0이 됩니다.',
-      time: '핵심 키워드 힌트만 주어집니다. 가장 빠르게 계통수를 완성하세요. 틀릴 때마다 <strong>+3초</strong> 패널티가 붙습니다.',
+      time: '핵심 키워드와 초성 힌트가 주어집니다. 가장 빠르게 계통수를 완성하세요. 틀릴 때마다 <strong>+3초</strong> 패널티가 붙습니다.',
     },
   },
   stage4: {
@@ -58,7 +58,7 @@ const STAGES = {
     startLabel: '세포호흡·광합성 탐험 시작하기',
     desc: {
       combo: '상세 힌트와 초성을 보고 용어를 입력하세요. 틀리지 않고 두 소기관을 모두 밝히면 <strong>ALL COMBO</strong>!',
-      time: '핵심 키워드 힌트만 주어집니다. 가장 빠르게 두 소기관을 완성하세요. 틀릴 때마다 <strong>+3초</strong> 패널티가 붙습니다.',
+      time: '핵심 키워드와 초성 힌트가 주어집니다. 가장 빠르게 두 소기관을 완성하세요. 틀릴 때마다 <strong>+3초</strong> 패널티가 붙습니다.',
     },
   },
   stage5: {
@@ -69,7 +69,7 @@ const STAGES = {
     startLabel: '생명공학기술 랩 가동하기',
     desc: {
       combo: '상세 힌트와 초성을 보고 용어를 입력하세요. 틀리지 않고 5개 플랫폼을 모두 가동하면 <strong>ALL COMBO</strong>!',
-      time: '핵심 키워드 힌트만 주어집니다. 가장 빠르게 바이오랩을 가동하세요. 틀릴 때마다 <strong>+3초</strong> 패널티가 붙습니다.',
+      time: '핵심 키워드와 초성 힌트가 주어집니다. 가장 빠르게 바이오랩을 가동하세요. 틀릴 때마다 <strong>+3초</strong> 패널티가 붙습니다.',
     },
   },
 };
@@ -666,12 +666,11 @@ function renderVoyageStep() {
   const item = currentItem();
   typingStep.textContent = `STEP ${String(state.index + 1).padStart(2, '0')} / ${total()}`;
   typingPlace.textContent = item.place;
+  typingChosung.textContent = `초성 힌트: ${getChosung(item.term)}`;
+  typingChosung.classList.remove('hidden');
   if (state.selectedMode === 'combo') {
-    typingChosung.textContent = `초성 힌트: ${getChosung(item.term)}`;
-    typingChosung.classList.remove('hidden');
     typingHint.textContent = item.hint;
   } else {
-    typingChosung.classList.add('hidden');
     typingHint.textContent = `핵심 키워드: ${item.shortHint}`;
   }
   hudProgress.textContent = `${state.index} / ${total()}`;
